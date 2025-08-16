@@ -1,7 +1,7 @@
 # 🎤EmoSense: A Real-Time Multilingual Emotion Detection from Speech Signals
 
 ## 📌 Overview
-This project is a real-time emotion detection system that analyzes emotions from voice inputs using a combination of Flask (Python) and Node.js for backend processing, and React.js for frontend visualization. It supports multilingual speech, automatically transcribes and translates audio, and classifies emotions using a RoBERTa-based transformer model.
+This project is a real-time emotion detection system that analyzes emotions from voice inputs using a combination of Flask (Python) and Node.js for backend processing, and React.js for frontend visualization. It supports multilingual speech, automatically transcribes and translates audio, and classifies emotions using a Distillbert-based transformer model.
 
 ---
 
@@ -21,7 +21,7 @@ Results
 ## 🚀 Key Features
 - 🎙 **Speech-to-Text**: Converts recorded audio into text using Google Speech Recognition.
 - 🌍 **Multilingual Translation**: Detects and translates non-English text to English via Google Translate API.
-- 🤖 **Emotion Detection**: Utilizes the `roberta-base-go_emotions` model for accurate emotion classification with confidence scores.
+- 🤖 **Emotion Detection**: Utilizes the `Distillbert-base-go_emotions` model for accurate emotion classification with confidence scores.
 - 🖥 **Interactive Dashboard**: Real-time visualization of detected emotions in a responsive UI and changes background colour based on emotion.
 - ⚡ **Instant Feedback**: Uploads and processes audio with near real-time response.
 
