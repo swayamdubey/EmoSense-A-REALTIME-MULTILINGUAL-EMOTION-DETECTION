@@ -72,7 +72,6 @@ export default function Home() {
             EmoSense
           </h1>
           <p className="text-xl font-light text-gray-300 md:text-2xl">Multilingual Real-time Emotion Detection through voice signal analysis </p>
-          <p className="mt-2 text-sm text-gray-400 md:text-base"> Made by Sejal Sinha</p>
         </div>
 
         {/* Main Interface */}
@@ -128,8 +127,7 @@ export default function Home() {
         </div>
       </div>
       <footer className="absolute bottom-0 w-full p-4 text-center text-gray-400 bg-gray-800">
-        <p className="text-sm">© 2025 EmoSense. All rights reserved.</p>
-        <p className="text-xs">Built By Sejal Sinha</p> 
+        <p className="text-sm">© 2026 EmoSense. All rights reserved.</p>
       </footer>
     </div>
   )
