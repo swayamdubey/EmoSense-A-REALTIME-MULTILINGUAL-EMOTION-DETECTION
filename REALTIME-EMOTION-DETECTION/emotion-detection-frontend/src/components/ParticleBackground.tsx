@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect, useRef } from "react"
 
 interface Particle {
@@ -8,8 +6,8 @@ interface Particle {
   vx: number
   vy: number
   size: number
-  opacity: number
-  hue: number
+  alpha: number
+  color: string
 }
 
 interface ParticleBackgroundProps {
@@ -19,8 +17,6 @@ interface ParticleBackgroundProps {
 
 export default function ParticleBackground({ emotion, isActive }: ParticleBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const particlesRef = useRef<Particle[]>([])
-  const animationRef = useRef<number>(0)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -29,119 +25,129 @@ export default function ParticleBackground({ emotion, isActive }: ParticleBackgr
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
+    let animationFrameId: number
+    let particles: Particle[] = []
+
+    const getEmotionColors = (emo: string) => {
+      const colors: Record<string, string[]> = {
+        joy: ["#fbbf24", "#f59e0b", "#f97316"], // Yellows / Oranges
+        sadness: ["#3b82f6", "#60a5fa", "#1d4ed8"], // Blues
+        anger: ["#ef4444", "#f87171", "#dc2626"], // Reds
+        fear: ["#8b5cf6", "#a78bfa", "#6d28d9"], // Purples
+        surprise: ["#06b6d4", "#22d3ee", "#3b82f6"], // Cyans / Blues
+        disgust: ["#10b981", "#34d399", "#059669"], // Greens
+        neutral: ["#9ca3af", "#cbd5e1", "#6b7280"], // Slate / Grays
+        love: ["#ec4899", "#f472b6", "#be185d"], // Pinks / Roses
+        excitement: ["#f97316", "#fbbf24", "#ea580c"], // Bright Orange / Yellow
+        desire: ["#be123c", "#f43f5e", "#fda4af"], // Deep Reds / Pinks
+        optimism: ["#10b981", "#6ee7b7", "#3b82f6"], // Emerald / Blue
+        approval: ["#059669", "#34d399", "#0d9488"], // Greens / Teals
+        realization: ["#6366f1", "#818cf8", "#4f46e5"], // Indigo
+        annoyance: ["#f97316", "#ef4444", "#b91c1c"], // Orange / Red
+      }
+      return colors[emo] || colors.neutral
+    }
+
     const resizeCanvas = () => {
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
+      initParticles()
     }
 
-    resizeCanvas()
-    window.addEventListener("resize", resizeCanvas)
-
-    // Initialize particles
     const initParticles = () => {
-      particlesRef.current = []
-      const particleCount = isActive ? 150 : 80
+      const colors = getEmotionColors(emotion)
+      particles = []
+      const particleCount = Math.min(Math.floor((canvas.width * canvas.height) / 10000), 120)
 
       for (let i = 0; i < particleCount; i++) {
-        particlesRef.current.push({
+        particles.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          vx: (Math.random() - 0.5) * 2,
-          vy: (Math.random() - 0.5) * 2,
-          size: Math.random() * 3 + 1,
-          opacity: Math.random() * 0.8 + 0.2,
-          hue: getEmotionHue(emotion) + (Math.random() - 0.5) * 60,
+          vx: (Math.random() - 0.5) * (isActive ? 1.5 : 0.4),
+          vy: (Math.random() - 0.5) * (isActive ? 1.5 : 0.4),
+          size: Math.random() * 2.5 + 0.5,
+          alpha: Math.random() * 0.5 + 0.1,
+          color: colors[Math.floor(Math.random() * colors.length)],
         })
       }
     }
 
-    initParticles()
+    window.addEventListener("resize", resizeCanvas)
+    resizeCanvas()
 
     const animate = () => {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.05)"
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      particlesRef.current.forEach((particle, index) => {
-        // Update position
-        particle.x += particle.vx
-        particle.y += particle.vy
+      const colors = getEmotionColors(emotion)
 
-        // Wrap around edges
-        if (particle.x < 0) particle.x = canvas.width
-        if (particle.x > canvas.width) particle.x = 0
-        if (particle.y < 0) particle.y = canvas.height
-        if (particle.y > canvas.height) particle.y = 0
+      particles.forEach((p) => {
+        // Move particle
+        p.x += p.vx
+        p.y += p.vy
 
-        // Update properties based on activity
-        if (isActive) {
-          particle.vx += (Math.random() - 0.5) * 0.1
-          particle.vy += (Math.random() - 0.5) * 0.1
-          particle.size = Math.min(particle.size * 1.001, 5)
-          particle.opacity = Math.min(particle.opacity * 1.002, 1)
-        } else {
-          particle.vx *= 0.99
-          particle.vy *= 0.99
-          particle.size = Math.max(particle.size * 0.999, 1)
-          particle.opacity = Math.max(particle.opacity * 0.998, 0.2)
+        // Wrap around screen
+        if (p.x < 0) p.x = canvas.width
+        if (p.x > canvas.width) p.x = 0
+        if (p.y < 0) p.y = canvas.height
+        if (p.y > canvas.height) p.y = 0
+
+        // Speed adjustment if state changed
+        const targetSpeedMultiplier = isActive ? 1.5 : 0.4
+        const currentSpeed = Math.sqrt(p.vx * p.vx + p.vy * p.vy)
+        if (currentSpeed > 0) {
+          const ratio = targetSpeedMultiplier / currentSpeed
+          // Smoothly interpolate speed
+          p.vx += (p.vx * ratio - p.vx) * 0.05
+          p.vy += (p.vy * ratio - p.vy) * 0.05
         }
 
-        // Draw particle
+        // Draw particle with glow
+        ctx.save()
+        ctx.globalAlpha = p.alpha
+        ctx.shadowBlur = isActive ? 12 : 6
+        ctx.shadowColor = p.color
+        ctx.fillStyle = p.color
         ctx.beginPath()
-        ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2)
-        ctx.fillStyle = `hsla(${particle.hue}, 70%, 60%, ${particle.opacity})`
+        ctx.arc(p.x, p.y, p.size * (isActive ? 1.3 : 1.0), 0, Math.PI * 2)
         ctx.fill()
-
-        // Draw connections
-        particlesRef.current.slice(index + 1).forEach((otherParticle) => {
-          const dx = particle.x - otherParticle.x
-          const dy = particle.y - otherParticle.y
-          const distance = Math.sqrt(dx * dx + dy * dy)
-
-          if (distance < 100) {
-            ctx.beginPath()
-            ctx.moveTo(particle.x, particle.y)
-            ctx.lineTo(otherParticle.x, otherParticle.y)
-            ctx.strokeStyle = `hsla(${particle.hue}, 70%, 60%, ${0.1 * (1 - distance / 100)})`
-            ctx.lineWidth = 0.5
-            ctx.stroke()
-          }
-        })
+        ctx.restore()
       })
 
-      animationRef.current = requestAnimationFrame(animate)
+      // Add elegant faint digital grid network effect when active
+      if (isActive) {
+        ctx.strokeStyle = colors[0]
+        ctx.lineWidth = 0.15
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i + 1; j < particles.length; j++) {
+            const dx = particles[i].x - particles[j].x
+            const dy = particles[i].y - particles[j].y
+            const dist = Math.sqrt(dx * dx + dy * dy)
+            if (dist < 100) {
+              ctx.globalAlpha = (1 - dist / 100) * 0.15
+              ctx.beginPath()
+              ctx.moveTo(particles[i].x, particles[i].y)
+              ctx.lineTo(particles[j].x, particles[j].y)
+              ctx.stroke()
+            }
+          }
+        }
+      }
+
+      animationFrameId = requestAnimationFrame(animate)
     }
 
     animate()
 
     return () => {
       window.removeEventListener("resize", resizeCanvas)
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current)
-      }
+      cancelAnimationFrame(animationFrameId)
     }
   }, [emotion, isActive])
 
-  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" style={{ zIndex: 1 }} />
-}
-
-function getEmotionHue(emotion: string): number {
-  const hues = {
-    joy: 45, // Yellow-orange
-    happiness: 45,
-    sadness: 220, // Blue
-    anger: 0, // Red
-    fear: 270, // Purple
-    surprise: 180, // Cyan
-    disgust: 120, // Green
-    neutral: 200, // Blue-gray
-    love: 330, // Pink
-    excitement: 30, // Orange
-    desire: 300, // Magenta
-    optimism: 150, // Green-cyan
-    approval: 120, // Green
-    realization: 240, // Blue-purple
-    annoyance: 15, // Red-orange
-  }
-
-  return hues[emotion as keyof typeof hues] || hues.neutral
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute top-0 left-0 w-full h-full pointer-events-none z-0"
+    />
+  )
 }
